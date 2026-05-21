@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ BGCA 智能報表控制台 V5.6 (完美修復版)</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            margin: 0; padding: 0; font-family: 'Segoe UI', '微軟正黑體', sans-serif;
+            background: linear-gradient(-45deg, #ff9a9e, #fecfef, #f6d365, #fda085);
+            background-size: 400% 400%; animation: gradientBG 15s ease infinite;
+            color: #4a3b32; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        .dashboard-container { width: 95%; max-width: 1400px; height: 92vh; display: flex; gap: 20px; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(255, 154, 158, 0.2); padding: 25px; display: flex; flex-direction: column;
+        }
+        .left-panel { flex: 0 0 380px; overflow-y: auto; }
+        .right-panel { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+        h1 { margin-top: 0; color: #d65b32; font-size: 22px; font-weight: 600; text-align: center;}
+        .section-title { font-weight: bold; color: #d65b32; margin-top: 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; font-size: 14px;}
+
+        input[type="text"], select, textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 2px solid #fbd2c9; background: #ffffff; font-size: 14px; box-sizing: border-box; }
+        textarea { height: 100px; font-family: monospace; resize: none; }
+
+        /* Excel 拖曳區 */
+        .upload-area {
+            border: 2px dashed #fda085; border-radius: 12px; padding: 15px; text-align: center;
+            background: rgba(255, 255, 255, 0.5); cursor: pointer; transition: 0.3s; position: relative;
+        }
+        .upload-area:hover { background: rgba(255, 255, 255, 0.8); }
+        .upload-area input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        
+        #fileInfoArea { display: none; margin-top: 5px; z-index: 2; position: relative;}
+        .delete-btn { background: #dc3545; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; margin-top: 5px; }
+
+        /* 格式設定 */
+        .format-settings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: rgba(255, 255, 255, 0.5); padding: 10px; border-radius: 12px; }
+        .format-item label { display: block; font-size: 11px; color: #7a6a61; margin-bottom: 3px; font-weight: bold; text-align: center;}
+        .format-item select { padding: 5px; font-size: 12px; }
+
+        /* A27 官方資源小方塊 */
+        .official-section {
+            margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.4); 
+            border-radius: 12px; border: 1px solid rgba(111, 66, 193, 0.2); text-align: center;
+        }
+        .official-section p { margin: 0 0 8px 0; font-size: 12px; color: #6f42c1; font-weight: bold; }
+        .official-btn {
+            display: inline-block; width: 100%; padding: 8px; background-color: #fff; border: 1px solid #6f42c1; color: #6f42c1;
+            text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 12px; transition: 0.2s; box-sizing: border-box;
+        }
+        .official-btn:hover { background: #6f42c1; color: white; }
+
+        /* 魔法生成按鈕 */
+        .magic-btn {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: white; border: none; padding: 14px;
+            border-radius: 50px; cursor: pointer; margin-top: 20px; width: 100%; font-weight: bold; font-size: 17px;
+            box-shadow: 0 4px 15px rgba(253, 160, 133, 0.4); transition: 0.2s;
+        }
+        .magic-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(253, 160, 133, 0.6); }
+
+        /* 右側表格 */
+        .table-container { flex: 1; overflow-y: auto; border-radius: 10px; background: rgba(255, 255, 255, 0.9); margin-top: 15px; }
+        table { width: 100%; min-width: 800px; border-collapse: collapse; }
+        
+        /* 表頭防透底設定 */
+        th { 
+            background: #fae3d9; padding: 12px; position: sticky; top: 0; 
+            color: #d65b32; z-index: 10; font-size: 14px; border-bottom: 2px solid #fda085;
+        }
+        td { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.05); text-align: center; font-size: 14px;}
+        
+        .dl-link { 
+            display: inline-block; padding: 8px 12px; margin: 4px; border-radius: 6px; 
+            text-decoration: none; font-size: 12px; font-weight: bold; color: white; 
+            transition: 0.2s; border: none; cursor: pointer; white-space: nowrap; 
+        }
+        .dl-link:hover { opacity: 0.8; transform: scale(1.05); }
+        .pdf-btn { background-color: #ff7e67; }
+        .excel-btn { background-color: #4bc0c0; }
+        .export-btn { background-color: #28a745; box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3); font-size: 13px; padding: 8px 15px;}
+
+        /* A27 透視方格按鈕 (右側提示用) */
+        .reminder-btn {
+            display: inline-block; padding: 8px 15px; border-radius: 8px;
+            background: rgba(111, 66, 193, 0.1); border: 1px solid rgba(111, 66, 193, 0.4);
+            color: #6f42c1; font-weight: bold; font-size: 12px; text-decoration: none;
+            transition: all 0.2s; box-shadow: 0 2px 5px rgba(111, 66, 193, 0.1); white-space: nowrap;
+        }
+        .reminder-btn:hover { background: #6f42c1; color: white; transform: scale(1.03); border-color: #6f42c1; }
+
+        .badge-cancel { background: #dc3545; color: white; padding: 2px 5px; border-radius: 4px; font-size: 10px; margin-left: 5px;}
+        .cancelled-row { background-color: rgba(255, 0, 0, 0.05); }
+
+        #loading { display: none; text-align: center; color: #d65b32; font-weight: bold; margin-top: 20%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <div class="glass-panel left-panel">
+        <h1>✨ 報表魔法助理 V5.6</h1>
+        
+        <div class="section-title">🏢 1. 中心編號</div>
+        <input type="text" id="centerInput" placeholder="例如: 0334">
+
+        <div class="section-title">⚙️ 2. 輸出格式</div>
+        <div class="format-settings">
+            <div class="format-item"><label>PG01A</label><select id="formatA"><option value="PDF" selected>📄 PDF</option><option value="EXCELOPENXML">📊 EXCEL</option></select></div>
+            <div class="format-item"><label>PG01B</label><select id="formatB"><option value="EXCELOPENXML" selected>📊 EXCEL</option><option value="PDF">📄 PDF</option></select></div>
+            <div class="format-item"><label>PG01C</label><select id="formatC"><option value="PDF" selected>📄 PDF</option><option value="EXCELOPENXML">📊 EXCEL</option></select></div>
+        </div>
+
+        <div class="section-title">📝 3. 方法 A：批量貼上編號</div>
+        <textarea id="bulkInput" placeholder="每行一個編號..."></textarea>
+
+        <div class="section-title">📁 4. 方法 B：匯入 Excel</div>
+        <div class="upload-area">
+            <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" onchange="handleFileUpload(event)">
+            <div id="uploadText">📥 點擊或拖曳檔案</div>
+            <div id="fileInfoArea">
+                <span id="fileNameDisplay" style="color:#28a745; font-weight:bold; font-size:13px;"></span><br>
+                <button class="delete-btn" onclick="clearFile(event)">✖ 移除檔案</button>
+            </div>
+        </div>
+
+        <div class="official-section">
+            <p>💡 遇取消活動需要 A27 表格？</p>
+            <a href="https://bgca.sharepoint.com/sites/Admin/DocLib1/Forms/AllItems.aspx?id=%2Fsites%2FAdmin%2FDocLib1%2FAdministration%20Forms%20%28%E8%A1%8C%E6%94%BF%E9%83%A8%E8%A1%A8%E6%A0%BC%29&viewid=cf3daeac-7ca3-42c1-8707-432534e2e384" 
+               target="_blank" class="official-btn">📂 前往 SharePoint 下載官方範本</a>
+        </div>
+
+        <button class="magic-btn" onclick="generateLinks()">🪄 一鍵生成下載通道</button>
+    </div>
+
+    <div class="glass-panel right-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>預覽結果</h2>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div id="counterArea" style="font-size: 13px; color: #d65b32; font-weight: bold;"></div>
+                <button id="exportCsvBtn" class="dl-link export-btn" style="display: none;" onclick="exportToCSV()">📥 匯出 PAD 任務清單 (CSV)</button>
+            </div>
+        </div>
+        <div class="table-container">
+            <div id="emptyState" style="text-align: center; margin-top: 20%; color: #8a7a71;">
+                <span style="font-size: 40px;">☕</span><br>請輸入編號或匯入檔案後按生成
+            </div>
+            <div id="loading">✨ 魔法處理中...</div>
+            <table id="resultTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th width="8%">序號</th>
+                        <th width="32%">活動資料</th>
+                        <th width="20%">PG01A</th>
+                        <th width="20%">PG01B</th>
+                        <th width="20%">PG01C</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    let globalParsedData = null;
+    let globalTaskList = []; 
+    const officialA27 = "https://bgca.sharepoint.com/sites/Admin/DocLib1/Forms/AllItems.aspx?id=%2Fsites%2FAdmin%2FDocLib1%2FAdministration%20Forms%20%28%E8%A1%8C%E6%94%BF%E9%83%A8%E8%A1%A8%E6%A0%BC%29&viewid=cf3daeac-7ca3-42c1-8707-432534e2e384";
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        document.getElementById('uploadText').style.display = 'none';
+        document.getElementById('fileInfoArea').style.display = 'block';
+        document.getElementById('fileNameDisplay').innerText = `✅ ${file.name}`;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+            globalParsedData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function clearFile(e) {
+        e.preventDefault(); e.stopPropagation();
+        document.getElementById('excelFile').value = ''; globalParsedData = null;
+        document.getElementById('fileInfoArea').style.display = 'none';
+        document.getElementById('uploadText').style.display = 'block';
+    }
+
+    function generateLinks() {
+        const center = document.getElementById('centerInput').value.trim();
+        const bulkText = document.getElementById('bulkInput').value.trim();
+        
+        if (!center) { alert('請填寫中心編號！'); return; }
+
+        let finalIds = [];
+        globalTaskList = []; 
+
+        if (globalParsedData && globalParsedData.length > 1) {
+            const headers = globalParsedData[0];
+            let idIdx = headers.findIndex(h => /編號|id/i.test(h));
+            let nameIdx = headers.findIndex(h => /名稱|name/i.test(h));
+            idIdx = idIdx === -1 ? 0 : idIdx;
+            nameIdx = nameIdx === -1 ? 1 : nameIdx;
+            globalParsedData.slice(1).forEach(row => {
+                if (row[idIdx]) finalIds.push({ id: String(row[idIdx]).trim(), name: String(row[nameIdx] || '').trim() });
+            });
+        } else if (bulkText) {
+            bulkText.split('\n').forEach(line => {
+                if (line.trim()) {
+                    const parts = line.trim().split(/\s+/);
+                    finalIds.push({ id: parts[0], name: parts.slice(1).join(' ') || '手動輸入' });
+                }
+            });
+        }
+
+        if (finalIds.length === 0) { alert('請輸入編號或匯入檔案！'); return; }
+
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultTable').style.display = 'none';
+        document.getElementById('exportCsvBtn').style.display = 'none';
+
+        setTimeout(() => {
+            let html = '', count = 0, cancels = 0;
+            const fA = document.getElementById('formatA').value;
+            const fB = document.getElementById('formatB').value;
+            const fC = document.getElementById('formatC').value;
+
+            finalIds.forEach(item => {
+                count++;
+                const isCancel = item.name.includes('取消');
+
+                // 完美還原 V5.4 嘅獨立網址邏輯，保留 &amp; 同埋正確嘅 para_unit / center_id
+                const urlA = `https://crmrpt.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01A%20ICYSC_CC(2024.07)&amp;rs:Command=Render&amp;para_unit=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fA}`;
+                const urlB = `https://crmrpt.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01B%20CRM%20FSA%20(%E5%85%A8%E6%9C%9F)&amp;rs:Command=Render&amp;center_id=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fB}`;
+                const urlC = `https://crmrpt.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01C%20(4.2018)&amp;rs:Command=Render&amp;para_unit=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fC}`;
+
+                // 儲存俾 PAD 用嘅時候，幫你將 &amp; 轉返做正常 &，等 PAD 唔會讀錯
+                globalTaskList.push({
+                    index: count,
+                    id: item.id,
+                    name: item.name,
+                    status: isCancel ? '取消' : '正常',
+                    urlA: urlA.replace(/&amp;/g, '&'),
+                    urlB: isCancel ? '' : urlB.replace(/&amp;/g, '&'),
+                    urlC: isCancel ? '' : urlC.replace(/&amp;/g, '&')
+                });
+
+                if (isCancel) {
+                    cancels++;
+                    html += `
+                        <tr class="cancelled-row">
+                            <td>${count}</td>
+                            <td style="text-align:left;"><b>${item.id}</b><br><small>${item.name}</small><span class="badge-cancel">取消</span></td>
+                            <td><a href="${urlA}" class="dl-link pdf-btn" target="_blank">📄 下載 PG01A</a></td>
+                            <td colspan="2" style="vertical-align: middle;">
+                                <a href="${officialA27}" target="_blank" class="reminder-btn">⚠️ 下載官方 A27 填寫</a>
+                            </td>
+                        </tr>`;
+                } else {
+                    html += `
+                        <tr>
+                            <td>${count}</td>
+                            <td style="text-align:left;"><b>${item.id}</b><br><small>${item.name}</small></td>
+                            <td><a href="${urlA}" class="dl-link pdf-btn" target="_blank">📄 下載</a></td>
+                            <td><a href="${urlB}" class="dl-link excel-btn" target="_blank">📊 下載</a></td>
+                            <td><a href="${urlC}" class="dl-link pdf-btn" target="_blank">📄 下載</a></td>
+                        </tr>`;
+                }
+            });
+            document.getElementById('tableBody').innerHTML = html;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('resultTable').style.display = 'table';
+            document.getElementById('counterArea').innerText = `處理完成：${count} 筆 (含 ${cancels} 筆取消)`;
+            document.getElementById('exportCsvBtn').style.display = 'inline-block';
+        }, 600);
+    }
+
+    function exportToCSV() {
+        if (!globalTaskList || globalTaskList.length === 0) return;
+
+        let csvContent = "\uFEFF"; 
+        csvContent += "序號,活動編號,活動名稱,狀態,PG01A_URL,PG01B_URL,PG01C_URL\n";
+
+        globalTaskList.forEach(task => {
+            const safeName = task.name.replace(/"/g, '""'); 
+            csvContent += `${task.index},"${task.id}","${safeName}","${task.status}","${task.urlA}","${task.urlB}","${task.urlC}"\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        link.setAttribute("download", `PAD_報表下載任務_${dateStr}.csv`);
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>

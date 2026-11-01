@@ -241,9 +241,9 @@
                 const isCancel = item.name.includes('取消');
 
                 // 完美還原 V5.4 嘅獨立網址邏輯，保留 &amp; 同埋正確嘅 para_unit / center_id
-                const urlA = `https://crmrpt.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01A%20ICYSC_CC(2024.07)&amp;rs:Command=Render&amp;para_unit=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fA}`;
-                const urlB = `https://crmrpt.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01B%20CRM%20FSA%20(%E5%85%A8%E6%9C%9F)&amp;rs:Command=Render&amp;center_id=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fB}`;
-                const urlC = `https://crmrpt.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01C%20(4.2018)&amp;rs:Command=Render&amp;para_unit=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fC}`;
+                const urlA = `https://powerbi.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01A%20ICYSC_CC(2024.07)&amp;rs:Command=Render&amp;para_unit=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fA}`;
+                const urlB = `https://powerbi.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01B%20CRM%20FSA%20(%E5%85%A8%E6%9C%9F)&amp;rs:Command=Render&amp;center_id=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fB}`;
+                const urlC = `https://powerbi.bgca.org.hk/ReportServer?/%E6%9C%8D%E5%8B%99%E5%A0%B1%E8%A1%A8/PG01C%20(4.2018)&amp;rs:Command=Render&amp;para_unit=${encodeURIComponent(center)}&amp;activity_no=${encodeURIComponent(item.id)}&amp;rs:Format=${fC}`;
 
                 // 儲存俾 PAD 用嘅時候，幫你將 &amp; 轉返做正常 &，等 PAD 唔會讀錯
                 globalTaskList.push({
